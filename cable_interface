@@ -1,0 +1,53 @@
+#!/bin/sh
+##Usage:
+##'sudo cable_interface clean eth<blah>' to apply basic bandwidth limitations
+##'sudo cable_interface dirty eth<blah>' to apply bandwidth and latency
+##show and off are other options
+##
+##Right now adjustments to the bandwidth, delay, and all that, are done directly on the specific tc commands below
+##Simple enough to make more variables, just haven't settled on how I want to do it
+
+if [ $# -eq 0 ]
+    then
+        echo ""
+        echo "Usage instructions cable_interface <option below> <interface>"
+        echo "------------------------------------------"
+        echo "off     = clear all profiles from interface"
+        echo "show    = show active profiles on interface"
+        echo "clean   = enable tbf only profile on interface"
+        echo "dirty   = enable tbf and netem profile on interface"
+        echo ""
+    exit
+ fi
+
+if [ $1 = "off" ]
+    then
+        tc qdisc del dev $2 root &> /dev/null
+    exit
+ fi
+
+if [ $1 = "show" ]
+    then
+        tc qdisc show dev $2
+    exit
+ fi
+
+if [ $1 = "clean" ]
+    then
+        tc qdisc del dev $2 root &> /dev/null
+        tc qdisc add dev $2 root handle 1: tbf rate 10mbit burst 1mbit latency 25ms
+        tc qdisc show dev $2
+    exit
+ fi
+
+if [ $1 = "dirty" ]
+    then
+        tc qdisc del dev $2 root &> /dev/null
+        tc qdisc add dev $2 root handle 1: tbf rate 10mbit burst 1mbit latency 25ms
+        tc qdisc add dev $2 parent 1: handle 2 netem delay 400ms 40ms 25% loss 15.3% 25% duplicate 1% corrupt 0.1% reorder 25% 50%
+        tc qdisc show dev $2
+    exit
+ fi
+
+
+#### EOF #####
